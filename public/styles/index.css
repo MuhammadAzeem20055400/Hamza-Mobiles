@@ -1,14 +1,11 @@
-/* Import Google Font */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
-/* Global Reset */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-/* Body Styling */
 body {
   font-family: 'Roboto', sans-serif;
   background-color: #f0f2f5;
@@ -16,7 +13,6 @@ body {
   padding: 30px;
 }
 
-/* Header Styling */
 h1 {
   text-align: center;
   margin-bottom: 20px;
@@ -25,7 +21,6 @@ h1 {
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Navigation Menu */
 nav {
   background-color: #ffffff;
   border: 1px solid #ddd;
@@ -55,7 +50,6 @@ nav a:hover {
   transform: scale(1.05);
 }
 
-/* Dashboard Container */
 .dashboard-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -66,7 +60,6 @@ nav a:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Section Styling */
 section {
   margin-bottom: 40px;
 }
@@ -78,7 +71,6 @@ section h2 {
   padding-bottom: 5px;
 }
 
-/* Table Styling */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -104,7 +96,6 @@ table tbody tr:hover {
   background-color: #f1f1f1;
 }
 
-/* Button Styling */
 button {
   background-color: #3498db;
   color: #fff;
