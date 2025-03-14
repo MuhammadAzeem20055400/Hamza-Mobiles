@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="styles/index.css">
+</head>
+
+<body>
+  <div class="dashboard-container">
+    <h1>Dashboard</h1>
+    <nav>
+      <ul>
+        <li><a href="add_product.html">Add Product</a></li>
+        <li><a href="view_product.html">View Products</a></li>
+        <li><a href="">Add Customer</a></li>
+        <li><a href="">View Customers</a></li>
+        <li><a href="">Sales Management</a></li>
+      </ul>
+    </nav>
+
+    <section id="recentProducts">
+      <h2>Recent Products</h2>
+      <table id="recentProductsTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Stock Quantity</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+  </div>
+
+  <script>
+    async function loadRecentProducts() {
+      try {
+        const response = await fetch('/products');
+        const products = await response.json();
+
+        products.sort((a, b) => b.id - a.id);
+        const recent = products.slice(0, 5);
+        const tbody = document.querySelector('#recentProductsTable tbody');
+        tbody.innerHTML = '';
+        recent.forEach(product => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${product.id}</td>
+                          <td>${product.name}</td>
+                          <td>${product.category}</td>
+                          <td>${product.price}</td>
+                          <td>${product.stock_quantity}</td>`;
+          tbody.appendChild(tr);
+        });
+      } catch (error) {
+        console.error("Error loading recent products:", error);
+      }
+    }
+
+
+    loadRecentProducts();
+  </script>
+</body>
+
+</html>

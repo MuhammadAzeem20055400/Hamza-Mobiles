@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Product - Hamza Mobile Retail Store</title>
+  <style>
+    nav a {
+      text-decoration: none;
+      margin-right: 15px;
+      font-weight: bold;
+    }
+    form {
+      margin-top: 20px;
+    }
+    input {
+      display: block;
+      margin-bottom: 10px;
+      padding: 5px;
+      width: 300px;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="index.html">Dashboard</a>
+    <a href="view_product.html">View Products</a>
+  </nav>
+  <h1>Edit Product</h1>
+  
+  <form id="editProductForm">
+    <input type="text" id="name" placeholder="Product Name" required>
+    <input type="text" id="category" placeholder="Category" required>
+    <input type="number" id="price" placeholder="Price" step="0.01" required>
+    <input type="number" id="stock_quantity" placeholder="Stock Quantity" required>
+    <button type="submit">Save Changes</button>
+  </form>
+
+  <script>
+  
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    const productId = getQueryParam('id');
+    if (!productId) {
+      alert("No product ID provided in URL.");
+    }
+
+   
+    async function loadProduct() {
+      try {
+       
+        const response = await fetch('/products');
+        const products = await response.json();
+        const product = products.find(p => p.id == productId);
+        if (!product) {
+          alert("Product not found.");
+          return;
+        }
+     
+        document.getElementById('name').value = product.name;
+        document.getElementById('category').value = product.category;
+        document.getElementById('price').value = product.price;
+        document.getElementById('stock_quantity').value = product.stock_quantity;
+      } catch (error) {
+        console.error("Error loading product:", error);
+      }
+    }
+
+    document.getElementById('editProductForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const data = {
+        name: document.getElementById('name').value,
+        category: document.getElementById('category').value,
+        price: parseFloat(document.getElementById('price').value),
+        stock_quantity: parseInt(document.getElementById('stock_quantity').value)
+      };
+
+      try {
+        const response = await fetch(`/products/${productId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        console.log('Product updated:', result);
+        alert('Product updated successfully!');
+       
+        window.location.href = "view_product.html";
+      } catch (error) {
+        console.error("Error updating product:", error);
+        alert("Error updating product.");
+      }
+    });
+
+   
+    loadProduct();
+  </script>
+</body>
+</html>

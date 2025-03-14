@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>View Products - Hamza Mobile Retail Store</title>
+  <style>
+     nav a {
+      text-decoration: none;
+      margin-right: 15px;
+      font-weight: bold;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    table, th, td {
+      border: 1px solid #aaa;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+    button {
+      margin: 3px;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html">Dashboard</a>
+    <a href="add_product.html">Add Product</a>
+  </nav>
+  <h1>View Products</h1>
+  <button onclick="loadProducts()">Refresh Products</button>
+  <table id="productTable">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Category</th>
+        <th>Price</th>
+        <th>Stock Quantity</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    async function loadProducts() {
+      const response = await fetch('/products');
+      const products = await response.json();
+      const tbody = document.getElementById('productTable').querySelector('tbody');
+      tbody.innerHTML = '';
+      products.forEach(product => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${product.id}</td>
+          <td>${product.name}</td>
+          <td>${product.category}</td>
+          <td>${product.price}</td>
+          <td>${product.stock_quantity}</td>
+          <td>
+  <button onclick="window.location.href='edit_product.html?id=${product.id}'">Edit</button>
+</td>
+
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    loadProducts();
+  </script>
+</body>
+</html>

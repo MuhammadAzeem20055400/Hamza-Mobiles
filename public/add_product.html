@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Add Product - Hamza Mobile Retail Store</title>
+  <style>
+    nav a {
+      text-decoration: none;
+      margin-right: 15px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+ 
+  <nav>
+    <a href="index.html">Dashboard</a>
+    <a href="view_product.html">View Products</a>
+  </nav>
+  <h1>Add Product</h1>
+  <form id="productForm">
+    <input type="text" id="name" placeholder="Product Name" required>
+    <input type="text" id="category" placeholder="Category" required>
+    <input type="number" id="price" placeholder="Price" step="0.01" required>
+    <input type="number" id="stock_quantity" placeholder="Stock Quantity" required>
+    <button type="submit">Submit Product</button>
+  </form>
+
+  <script>
+    document.getElementById('productForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const data = {
+        name: document.getElementById('name').value,
+        category: document.getElementById('category').value,
+        price: parseFloat(document.getElementById('price').value),
+        stock_quantity: parseInt(document.getElementById('stock_quantity').value)
+      };
+
+      const response = await fetch('/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+      console.log('Product added:', result);
+      alert('Product added successfully!');
+      e.target.reset();
+    });
+  </script>
+</body>
+</html>
