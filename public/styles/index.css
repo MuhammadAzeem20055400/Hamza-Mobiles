@@ -45,11 +45,11 @@ nav a {
   transition: color 0.3s ease, transform 0.3s ease;
 }
 
-/* nav a:hover {
+nav a:hover {
   color: #1d6fa5;
   transform: scale(1.05);
 }
- */
+
 .dashboard-container {
   max-width: 1200px;
   margin: 0 auto;
