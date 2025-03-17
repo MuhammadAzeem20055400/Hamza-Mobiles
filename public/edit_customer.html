@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Customer - Hamza Mobile Retail Store</title>
+  <style>
+    nav a {
+      text-decoration: none;
+      margin-right: 15px;
+      font-weight: bold;
+    }
+    form {
+      margin-top: 20px;
+    }
+    input {
+      display: block;
+      margin-bottom: 10px;
+      padding: 5px;
+      width: 300px;
+    }
+  </style>
+</head>
+<body>
+  
+  <nav>
+    <a href="index.html">Dashboard</a>
+    <a href="view_customer.html">View Customers</a>
+  </nav>
+  <h1>Edit Customer</h1>
+  <!-- Edit Customer Form -->
+  <form id="editCustomerForm">
+    <input type="text" id="cust_name" placeholder="Customer Name" required>
+    <input type="email" id="cust_email" placeholder="Email" required>
+    <input type="text" id="cust_phone" placeholder="Phone Number" required>
+    <button type="submit">Save Changes</button>
+  </form>
+
+  <script>
+    
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    const customerId = getQueryParam('id');
+    if (!customerId) {
+      alert("No customer ID provided in URL.");
+    }
+
+    
+    async function loadCustomer() {
+      try {
+        
+        const response = await fetch('/customers');
+        const customers = await response.json();
+        const customer = customers.find(c => c.id == customerId);
+        if (!customer) {
+          alert("Customer not found.");
+          return;
+        }
+        
+        document.getElementById('cust_name').value = customer.name;
+        document.getElementById('cust_email').value = customer.email;
+        document.getElementById('cust_phone').value = customer.phone;
+      } catch (error) {
+        console.error("Error loading customer:", error);
+      }
+    }
+
+    
+    document.getElementById('editCustomerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const data = {
+        name: document.getElementById('cust_name').value,
+        email: document.getElementById('cust_email').value,
+        phone: document.getElementById('cust_phone').value
+      };
+
+      try {
+        const response = await fetch(`/customers/${customerId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        console.log('Customer updated:', result);
+        alert('Customer updated successfully!');
+        
+        window.location.href = "view_customer.html";
+      } catch (error) {
+        console.error("Error updating customer:", error);
+        alert("Error updating customer.");
+      }
+    });
+
+    
+    loadCustomer();
+  </script>
+</body>
+</html>

@@ -59,6 +59,59 @@ app.delete('/products/:id', async (req, res) => {
   }
 });
 
+// -------------------- CUSTOMERS API --------------------
+
+// GET /customers
+app.get('/customers', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM customers');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /customers 
+app.post('/customers', async (req, res) => {
+  const { name, email, phone } = req.body;
+  try {
+    const [result] = await db.query(
+      'INSERT INTO customers (name, email, phone) VALUES (?, ?, ?)',
+      [name, email, phone]
+    );
+    res.json({ id: result.insertId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /customers/:id 
+app.put('/customers/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, email, phone } = req.body;
+  try {
+    await db.query(
+      'UPDATE customers SET name = ?, email = ?, phone = ? WHERE id = ?',
+      [name, email, phone, id]
+    );
+    res.json({ updatedID: id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /customers/:id 
+app.delete('/customers/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.query('DELETE FROM customers WHERE id = ?', [id]);
+    res.json({ deletedID: id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 if (require.main === module) {
   app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);

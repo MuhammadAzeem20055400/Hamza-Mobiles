@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Hamza Mobile Retail Store - Customer Management</title>
+</head>
+<body>
+  <h1>Customer Management</h1>
+  <!-- Form add a customer -->
+  <form id="customerForm">
+    <input type="text" id="name" placeholder="Customer Name" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="text" id="phone" placeholder="Phone Number" required>
+    <button type="submit">Add Customer</button>
+  </form>
+
+  <h2>Customer List</h2>
+  <table border="1" id="customerTable">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Phone</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    
+    async function loadCustomers() {
+      const response = await fetch('/customers');
+      const customers = await response.json();
+      const tbody = document.getElementById('customerTable').querySelector('tbody');
+      tbody.innerHTML = '';
+      customers.forEach(customer => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${customer.id}</td>
+                        <td>${customer.name}</td>
+                        <td>${customer.email}</td>
+                        <td>${customer.phone}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    
+    document.getElementById('customerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const data = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value
+      };
+
+      const response = await fetch('/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+      console.log('Customer added:', result);
+      loadCustomers();
+    });
+
+    
+    loadCustomers();
+  </script>
+</body>
+</html>

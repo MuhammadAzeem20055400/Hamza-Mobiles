@@ -14,8 +14,8 @@
       <ul>
         <li><a href="add_product.html">Add Product</a></li>
         <li><a href="view_product.html">View Products</a></li>
-        <li><a href="">Add Customer</a></li>
-        <li><a href="">View Customers</a></li>
+        <li><a href="add_customer.html">Add Customer</a></li>
+        <li><a href="view_customer.html">View Customers</a></li>
         <li><a href="">Sales Management</a></li>
       </ul>
     </nav>
@@ -36,6 +36,21 @@
       </table>
     </section>
 
+    
+    <section id="recentCustomers">
+      <h2>Recent Customers</h2>
+      <table id="recentCustomersTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
   </div>
 
   <script>
@@ -62,8 +77,31 @@
       }
     }
 
+    async function loadRecentCustomers() {
+      try {
+        const response = await fetch('/customers');
+        const customers = await response.json();
+        
+        customers.sort((a, b) => b.id - a.id);
+        const recent = customers.slice(0, 5);
+        const tbody = document.querySelector('#recentCustomersTable tbody');
+        tbody.innerHTML = '';
+        recent.forEach(customer => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${customer.id}</td>
+                          <td>${customer.name}</td>
+                          <td>${customer.email}</td>
+                          <td>${customer.phone}</td>`;
+          tbody.appendChild(tr);
+        });
+      } catch (error) {
+        console.error("Error loading recent customers:", error);
+      }
+    }
 
+    
     loadRecentProducts();
+    loadRecentCustomers();
   </script>
 </body>
 
