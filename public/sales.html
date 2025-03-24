@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Sales Dashboard</title>
+  <link rel="stylesheet" href="styles/index.css">
+</head>
+
+<body>
+  <div class="dashboard-container">
+    <h1>Sales Management Dashboard</h1>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="sales.html">Dashboard</a></li>
+        <li><a href="add_sale.html">Add Sale</a></li>
+        <li><a href="view_sale.html">View Sales</a></li>
+      </ul>
+    </nav>
+
+
+    <section id="recentSales">
+      <h2>Recent Sales (Last 10)</h2>
+      <table id="recentSalesTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Product</th>
+            <th>Customer</th>
+            <th>Quantity</th>
+            <th>Total Amount</th>
+            <th>Purchase Date</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+
+    let productCache = {};
+    let customerCache = {};
+
+    async function fetchProducts() {
+      try {
+        const response = await fetch('/products');
+        const products = await response.json();
+        products.forEach(product => {
+          productCache[product.id] = product.name;
+        });
+      } catch (error) {
+        console.error("Error loading products:", error);
+      }
+    }
+
+    async function fetchCustomers() {
+      try {
+        const response = await fetch('/customers');
+        const customers = await response.json();
+        customers.forEach(customer => {
+          customerCache[customer.id] = customer.name;
+        });
+      } catch (error) {
+        console.error("Error loading customers:", error);
+      }
+    }
+
+    async function loadRecentSales() {
+      try {
+        const response = await fetch('/sales');
+        const sales = await response.json();
+
+        sales.sort((a, b) => b.id - a.id);
+        const recent = sales.slice(0, 10);
+        const tbody = document.querySelector('#recentSalesTable tbody');
+        tbody.innerHTML = '';
+        recent.forEach(sale => {
+          const tr = document.createElement('tr');
+
+          const formattedDate = new Date(sale.purchase_date).toLocaleDateString();
+          tr.innerHTML = `
+            <td>${sale.id}</td>
+            <td>${productCache[sale.product_id] || 'Unknown Product'}</td>
+            <td>${customerCache[sale.customer_id] || 'Unknown Customer'}</td>
+            <td>${sale.quantity}</td>
+            <td>${sale.total_amount}</td>
+            <td>${formattedDate}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (error) {
+        console.error("Error loading recent sales:", error);
+      }
+    }
+
+    fetchProducts();
+    fetchCustomers();
+    loadRecentSales();
+  </script>
+</body>
+
+</html>

@@ -100,11 +100,103 @@ app.put('/customers/:id', async (req, res) => {
   }
 });
 
-// DELETE /customers/:id 
+// DELETE /customers/:id
 app.delete('/customers/:id', async (req, res) => {
   const { id } = req.params;
   try {
     await db.query('DELETE FROM customers WHERE id = ?', [id]);
+    res.json({ deletedID: id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------- SALES API --------------------
+
+// GET /sales
+app.get('/sales', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM sales');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /sales
+app.post('/sales', async (req, res) => {
+  const { product_id, customer_id, quantity, total_amount, purchase_date } = req.body;
+  let connection;
+  try {
+    
+    const saleQuantity = parseInt(quantity, 10);
+
+    
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    
+    const [productRows] = await connection.query(
+      'SELECT stock_quantity FROM products WHERE id = ?',
+      [product_id]
+    );
+    if (productRows.length === 0) {
+      throw new Error("Product not found");
+    }
+    const currentStock = productRows[0].stock_quantity;
+    if (currentStock < saleQuantity) {
+      throw new Error("Insufficient stock");
+    }
+
+    
+    const [updateResult] = await connection.query(
+      'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
+      [saleQuantity, product_id]
+    );
+    console.log(`Update result:`, updateResult);
+    if (updateResult.affectedRows === 0) {
+      throw new Error("Failed to update product stock");
+    }
+
+    
+    const [result] = await connection.query(
+      'INSERT INTO sales (product_id, customer_id, quantity, total_amount, purchase_date) VALUES (?, ?, ?, ?, ?)',
+      [product_id, customer_id, saleQuantity, total_amount, purchase_date]
+    );
+
+    
+    await connection.commit();
+
+    console.log(`Sale added. Updated stock for product ${product_id} should be ${currentStock - saleQuantity}`);
+    res.json({ id: result.insertId });
+  } catch (err) {
+    if (connection) await connection.rollback();
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+// PUT /sales/:id
+app.put('/sales/:id', async (req, res) => {
+  const { id } = req.params;
+  const { product_id, customer_id, quantity, total_amount, purchase_date } = req.body;
+  try {
+    await db.query(
+      'UPDATE sales SET product_id = ?, customer_id = ?, quantity = ?, total_amount = ?, purchase_date = ? WHERE id = ?',
+      [product_id, customer_id, quantity, total_amount, purchase_date, id]
+    );
+    res.json({ updatedID: id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /sales/:id
+app.delete('/sales/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.query('DELETE FROM sales WHERE id = ?', [id]);
     res.json({ deletedID: id });
   } catch (err) {
     res.status(500).json({ error: err.message });

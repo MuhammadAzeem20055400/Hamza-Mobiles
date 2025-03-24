@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Add Sale</title>
+  <link rel="stylesheet" href="styles/index.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <nav>
+      <ul>
+        <li><a href="sales.html">Sales Dashboard</a></li>
+        <li><a href="view_sale.html">View Sales</a></li>
+      </ul>
+    </nav>
+    <h1>Add Sale</h1>
+    <form id="salesForm">
+      <label for="productSelect">Product:</label>
+      <select id="productSelect" required>
+        <option value="">Select a product</option>
+      </select>
+      <br/><br/>
+      <label for="customerSelect">Customer:</label>
+      <select id="customerSelect" required>
+        <option value="">Select a customer</option>
+      </select>
+      <br/><br/>
+      <input type="number" id="quantity" placeholder="Quantity" required>
+      <input type="number" id="total_amount" placeholder="Total Amount" step="0.01" required>
+      <input type="datetime-local" id="purchase_date" required>
+      <br/><br/>
+      <button type="submit">Add Sale</button>
+    </form>
+  </div>
+
+  <script>
+   
+    async function loadProducts() {
+      const response = await fetch('/products');
+      const products = await response.json();
+      const productSelect = document.getElementById('productSelect');
+      productSelect.innerHTML = `<option value="">Select a product</option>`;
+      products.forEach(product => {
+        const option = document.createElement('option');
+        option.value = product.id;
+        option.textContent = product.name;
+        productSelect.appendChild(option);
+      });
+    }
+
+    
+    async function loadCustomers() {
+      const response = await fetch('/customers');
+      const customers = await response.json();
+      const customerSelect = document.getElementById('customerSelect');
+      customerSelect.innerHTML = `<option value="">Select a customer</option>`;
+      customers.forEach(customer => {
+        const option = document.createElement('option');
+        option.value = customer.id;
+        option.textContent = customer.name;
+        customerSelect.appendChild(option);
+      });
+    }
+
+    
+    document.getElementById('salesForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const data = {
+        product_id: parseInt(document.getElementById('productSelect').value),
+        customer_id: parseInt(document.getElementById('customerSelect').value),
+        quantity: parseInt(document.getElementById('quantity').value),
+        total_amount: parseFloat(document.getElementById('total_amount').value),
+        purchase_date: document.getElementById('purchase_date').value
+      };
+
+      const response = await fetch('/sales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+      console.log('Sale added:', result);
+      alert('Sale added successfully!');
+      e.target.reset();
+    });
+
+    loadProducts();
+    loadCustomers();
+  </script>
+</body>
+</html>
