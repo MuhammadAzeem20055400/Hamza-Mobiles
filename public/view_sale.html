@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>View Sales</title>
+  <link rel="stylesheet" href="styles/index.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <nav>
+      <ul>
+        <li><a href="sales.html">Sales Dashboard</a></li>
+        <li><a href="add_sale.html">Add Sale</a></li>
+      </ul>
+    </nav>
+    <h1>View Sales</h1>
+    <button onclick="loadSales()">Refresh Sales</button>
+    <table id="salesTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Product</th>
+          <th>Customer</th>
+          <th>Quantity</th>
+          <th>Total Amount</th>
+          <th>Purchase Date</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    // Cache product data to avoid multiple API calls
+    let productCache = {};
+    
+    async function fetchProducts() {
+      try {
+        const response = await fetch('/products');
+        const products = await response.json();
+        // Create a mapping of product IDs to names
+        products.forEach(product => {
+          productCache[product.id] = product.name;
+        });
+      } catch (error) {
+        console.error("Error loading products:", error);
+      }
+    }
+    
+    async function loadSales() {
+      try {
+        // First load products if not already cached
+        if (Object.keys(productCache).length === 0) {
+          await fetchProducts();
+        }
+        
+        // Then load sales
+        const response = await fetch('/sales');
+        const sales = await response.json();
+        const tbody = document.getElementById('salesTable').querySelector('tbody');
+        tbody.innerHTML = '';
+        
+        sales.forEach(sale => {
+          const date = new Date(sale.purchase_date);
+          const formattedDate = date.toLocaleDateString();
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${sale.id}</td>
+            <td>${productCache[sale.product_id] || 'Unknown Product'}</td>
+            <td>${sale.customer_id}</td>
+            <td>${sale.quantity}</td>
+            <td>${sale.total_amount}</td>
+            <td>${formattedDate}</td>`;
+          tbody.appendChild(tr);
+        });
+      } catch (error) {
+        console.error("Error loading sales:", error);
+      }
+    }
+
+    // Load products when page loads
+    fetchProducts();
+    // Load sales when page loads
+    loadSales();
+  </script>
+</body>
+</html>
