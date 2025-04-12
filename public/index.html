@@ -1,108 +1,49 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Dashboard</title>
-  <link rel="stylesheet" href="styles/index.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hamza Mobiles Login</title>
+  <link rel="stylesheet" href="styles/index.css" />
 </head>
-
 <body>
-  <div class="dashboard-container">
-    <h1>Dashboard</h1>
-    <nav>
-      <ul>
-        <li><a href="add_product.html">Add Product</a></li>
-        <li><a href="view_product.html">View Products</a></li>
-        <li><a href="add_customer.html">Add Customer</a></li>
-        <li><a href="view_customer.html">View Customers</a></li>
-        <li><a href="">Sales Management</a></li>
-      </ul>
-    </nav>
-
-    <section id="recentProducts">
-      <h2>Recent Products</h2>
-      <table id="recentProductsTable">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Price</th>
-            <th>Stock Quantity</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-
-    
-    <section id="recentCustomers">
-      <h2>Recent Customers</h2>
-      <table id="recentCustomersTable">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
+  <div class="login-container">
+    <div class="login-form">
+      <h1>Hamza Mobiles</h1>
+      <h2>Login</h2>
+      <form id="loginForm">
+        <input type="email" name="email" placeholder="Email" required />
+        <input type="password" name="password" placeholder="Password" required />
+        <button type="submit">Login</button>
+      </form>
+      <p id="loginMessage"></p>
+      <div class="register-link">
+        <p>Don't have an account? <a href="register.html">Register</a></p>
+      </div>
+    </div>
   </div>
 
   <script>
-    async function loadRecentProducts() {
-      try {
-        const response = await fetch('/products');
-        const products = await response.json();
+    const form = document.getElementById("loginForm");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
 
-        products.sort((a, b) => b.id - a.id);
-        const recent = products.slice(0, 5);
-        const tbody = document.querySelector('#recentProductsTable tbody');
-        tbody.innerHTML = '';
-        recent.forEach(product => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${product.id}</td>
-                          <td>${product.name}</td>
-                          <td>${product.category}</td>
-                          <td>${product.price}</td>
-                          <td>${product.stock_quantity}</td>`;
-          tbody.appendChild(tr);
-        });
-      } catch (error) {
-        console.error("Error loading recent products:", error);
+      const response = await fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+      document.getElementById("loginMessage").textContent = result.message || result.error;
+
+      if (response.ok && result.token) {
+        localStorage.setItem("token", result.token); 
+        window.location.href = "/dashboard.html"; // Redirect to dashboard after successful login
       }
-    }
-
-    async function loadRecentCustomers() {
-      try {
-        const response = await fetch('/customers');
-        const customers = await response.json();
-        
-        customers.sort((a, b) => b.id - a.id);
-        const recent = customers.slice(0, 5);
-        const tbody = document.querySelector('#recentCustomersTable tbody');
-        tbody.innerHTML = '';
-        recent.forEach(customer => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${customer.id}</td>
-                          <td>${customer.name}</td>
-                          <td>${customer.email}</td>
-                          <td>${customer.phone}</td>`;
-          tbody.appendChild(tr);
-        });
-      } catch (error) {
-        console.error("Error loading recent customers:", error);
-      }
-    }
-
-    
-    loadRecentProducts();
-    loadRecentCustomers();
+    });
   </script>
 </body>
-
 </html>
