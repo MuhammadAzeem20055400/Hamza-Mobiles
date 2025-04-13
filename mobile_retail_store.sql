@@ -26,3 +26,11 @@ CREATE TABLE sales (
   FOREIGN KEY (product_id) REFERENCES products(id),
   FOREIGN KEY (customer_id) REFERENCES customers(id)
 );
+
+-- Users Table
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(255) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL
+);
