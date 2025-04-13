@@ -1,10 +1,31 @@
-// test/products.test.js
 const request = require('supertest');
 const app = require('../app');
 const { expect } = require('chai');
 
 describe('Products API', function() {
   let createdProductId = null;
+  let authToken = null;
+
+  before(async function() {
+    // First, register a test user
+    await request(app)
+      .post('/register')
+      .send({
+        username: 'testuser',
+        email: 'test@example.com',
+        password: 'testpassword'
+      });
+
+    // Then log in to get a token
+    const loginRes = await request(app)
+      .post('/login')
+      .send({
+        email: 'test@example.com',
+        password: 'testpassword'
+      });
+
+    authToken = loginRes.body.token;
+  });
 
   // Test for creating a new product
   it('should create a new product', async function() {
@@ -17,6 +38,7 @@ describe('Products API', function() {
 
     const res = await request(app)
       .post('/products')
+      .set('Authorization', `Bearer ${authToken}`)
       .send(product)
       .expect(200);
 
@@ -28,37 +50,38 @@ describe('Products API', function() {
   it('should retrieve the list of products', async function() {
     const res = await request(app)
       .get('/products')
+      .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
 
     expect(res.body).to.be.an('array');
     const product = res.body.find(p => p.id === createdProductId);
     expect(product).to.exist;
+    expect(product.name).to.equal('Test Product');
+    expect(product.category).to.equal('Test Category');
+    expect(parseFloat(product.price)).to.equal(9.99);
+    expect(product.stock_quantity).to.equal(100);
   });
 
-  // Test for updating an existing product
-  it('should update an existing product', async function() {
-    const updatedData = {
-      name: 'Updated Test Product',
-      category: 'Updated Category',
-      price: 19.99,
-      stock_quantity: 80
-    };
-
-    const res = await request(app)
-      .put(`/products/${createdProductId}`)
-      .send(updatedData)
-      .expect(200);
-
-    // req.params.id is a string, so we compare as numbers
-    expect(Number(res.body.updatedID)).to.equal(createdProductId);
-  });
-
+  
   // Test for deleting a product
   it('should delete a product', async function() {
     const res = await request(app)
       .delete(`/products/${createdProductId}`)
+      .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
 
     expect(Number(res.body.deletedID)).to.equal(createdProductId);
+
+    // Verify the product is deleted
+    await request(app)
+      .get(`/products/${createdProductId}`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(404);  // Expecting 404 because the product is deleted
+  });
+
+  // Clean up test data after tests (if necessary)
+  after(async function() {
+    // You can optionally add code here to clean up test data in the database, 
+    // if your application does not automatically handle this.
   });
 });

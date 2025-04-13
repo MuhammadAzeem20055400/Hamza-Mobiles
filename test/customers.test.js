@@ -5,6 +5,29 @@ const { expect } = require('chai');
 
 describe('Customers API', function() {
   let createdCustomerId = null;
+  let authToken = null;
+
+  
+  before(async function() {
+    // First, register a test user if needed
+    await request(app)
+      .post('/register')
+      .send({
+        username: 'testuser',
+        email: 'test@example.com',
+        password: 'testpassword'
+      });
+
+    // Then log in to get a token
+    const loginRes = await request(app)
+      .post('/login')
+      .send({
+        email: 'test@example.com',
+        password: 'testpassword'
+      });
+
+    authToken = loginRes.body.token;
+  });
 
   // Test for creating a new customer
   it('should create a new customer', async function() {
@@ -16,6 +39,7 @@ describe('Customers API', function() {
 
     const res = await request(app)
       .post('/customers')
+      .set('Authorization', `Bearer ${authToken}`)
       .send(customer)
       .expect(200);
 
@@ -27,6 +51,7 @@ describe('Customers API', function() {
   it('should retrieve the list of customers', async function() {
     const res = await request(app)
       .get('/customers')
+      .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
 
     expect(res.body).to.be.an('array');
@@ -44,6 +69,7 @@ describe('Customers API', function() {
 
     const res = await request(app)
       .put(`/customers/${createdCustomerId}`)
+      .set('Authorization', `Bearer ${authToken}`)
       .send(updatedData)
       .expect(200);
 
@@ -54,6 +80,7 @@ describe('Customers API', function() {
   it('should delete a customer', async function() {
     const res = await request(app)
       .delete(`/customers/${createdCustomerId}`)
+      .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
 
     expect(Number(res.body.deletedID)).to.equal(createdCustomerId);
