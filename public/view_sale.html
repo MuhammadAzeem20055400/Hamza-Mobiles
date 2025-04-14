@@ -1,87 +1,232 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>View Sales</title>
-  <link rel="stylesheet" href="styles/index.css">
+
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"> <!-- Font Awesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/view_sale.css" />
 </head>
 <body>
-  <div class="dashboard-container">
+  <div class="container">
     <nav>
-      <ul>
-        <li><a href="sales.html">Sales Dashboard</a></li>
-        <li><a href="add_sale.html">Add Sale</a></li>
-      </ul>
+      <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="add_sale.html"><i class="fas fa-plus-circle"></i> Add Sale</a>
     </nav>
-    <h1>View Sales</h1>
+
+    <h1><i class="fas fa-chart-line"></i> View Sales</h1>
+
+    
     <button onclick="loadSales()">Refresh Sales</button>
-    <table id="salesTable">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Product</th>
-          <th>Customer</th>
-          <th>Quantity</th>
-          <th>Total Amount</th>
-          <th>Purchase Date</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+
+    <div class="card">
+      <table id="salesTable">
+        <thead>
+          <tr>
+            <th>ID <i class="fas fa-sort"></i></th>
+            <th>Product <i class="fas fa-sort"></i></th>
+            <th>Customer <i class="fas fa-sort"></i></th>
+            <th>Quantity <i class="fas fa-sort"></i></th>
+            <th>Total Amount <i class="fas fa-sort"></i></th>
+            <th>Date <i class="fas fa-sort"></i></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="notification" id="notification">
+      <i class="fas fa-check-circle"></i>
+      <span id="notificationMessage">Sales list updated!</span>
+    </div>
   </div>
 
   <script>
-    // Cache product data to avoid multiple API calls
+    
+    if (!localStorage.getItem('token')) {
+      window.location.href = '/index.html'; 
+    }
+  
     let productCache = {};
+    let customerCache = {};
+    let salesData = [];
+    let currentSortColumn = null;
+    let sortDirection = 1; 
+  
+    
+    async function fetchWithAuth(url) {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/index.html';
+        throw new Error('No authentication token');
+      }
+  
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
+      return response.json();
+    }
+  
     
     async function fetchProducts() {
       try {
-        const response = await fetch('/products');
-        const products = await response.json();
-        // Create a mapping of product IDs to names
+        const products = await fetchWithAuth('/products');
         products.forEach(product => {
           productCache[product.id] = product.name;
         });
       } catch (error) {
         console.error("Error loading products:", error);
+        showNotification("Error loading products", "error");
       }
     }
+  
+    
+    async function fetchCustomers() {
+      try {
+        const customers = await fetchWithAuth('/customers');
+        customers.forEach(customer => {
+          customerCache[customer.id] = customer.name;
+        });
+      } catch (error) {
+        console.error("Error loading customers:", error);
+        showNotification("Error loading customers", "error");
+      }
+    }
+  
     
     async function loadSales() {
       try {
-        // First load products if not already cached
-        if (Object.keys(productCache).length === 0) {
-          await fetchProducts();
-        }
         
-        // Then load sales
-        const response = await fetch('/sales');
-        const sales = await response.json();
-        const tbody = document.getElementById('salesTable').querySelector('tbody');
-        tbody.innerHTML = '';
+        await Promise.all([fetchProducts(), fetchCustomers()]);
+  
+        const sales = await fetchWithAuth('/sales');
+        salesData = sales; 
+        displaySales(sales);
         
-        sales.forEach(sale => {
-          const date = new Date(sale.purchase_date);
-          const formattedDate = date.toLocaleDateString();
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${sale.id}</td>
-            <td>${productCache[sale.product_id] || 'Unknown Product'}</td>
-            <td>${sale.customer_id}</td>
-            <td>${sale.quantity}</td>
-            <td>${sale.total_amount}</td>
-            <td>${formattedDate}</td>`;
-          tbody.appendChild(tr);
-        });
+        showNotification("Sales data loaded successfully", "success");
       } catch (error) {
         console.error("Error loading sales:", error);
+        showNotification("Error loading sales data", "error");
+        const tbody = document.querySelector('#salesTable tbody');
+        tbody.innerHTML = `<tr><td colspan="6">Failed to load sales data. Please try again.</td></tr>`;
       }
     }
-
-    // Load products when page loads
-    fetchProducts();
-    // Load sales when page loads
-    loadSales();
+  
+    
+    function displaySales(sales) {
+      const tbody = document.querySelector('#salesTable tbody');
+      tbody.innerHTML = '';
+  
+      sales.forEach(sale => {
+        const date = new Date(sale.purchase_date);
+        const formattedDate = date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${sale.id}</td>
+          <td>${productCache[sale.product_id] || 'Unknown Product'}</td>
+          <td>${customerCache[sale.customer_id] || 'Unknown Customer'}</td>
+          <td>${sale.quantity}</td>
+          <td>$${parseFloat(sale.total_amount).toFixed(2)}</td>
+          <td>${formattedDate}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  
+    
+    function sortSales(columnIndex) {
+      const columns = ['id', 'product_id', 'customer_id', 'quantity', 'total_amount', 'purchase_date'];
+      const columnKey = columns[columnIndex];
+      
+      
+      if (currentSortColumn === columnIndex) {
+        sortDirection *= -1;
+      } else {
+        currentSortColumn = columnIndex;
+        sortDirection = 1;
+      }
+  
+      salesData.sort((a, b) => {
+        let valA, valB;
+        
+        
+        if (columnKey === 'product_id') {
+          valA = productCache[a.product_id] || '';
+          valB = productCache[b.product_id] || '';
+        } else if (columnKey === 'customer_id') {
+          valA = customerCache[a.customer_id] || '';
+          valB = customerCache[b.customer_id] || '';
+        } else {
+          valA = a[columnKey];
+          valB = b[columnKey];
+        }
+  
+        
+        if (typeof valA === 'string') {
+          return valA.localeCompare(valB) * sortDirection;
+        } else if (columnKey === 'purchase_date') {
+          return (new Date(valA) - new Date(valB)) * sortDirection;
+        } else {
+          return (valA - valB) * sortDirection;
+        }
+      });
+  
+      displaySales(salesData);
+      updateSortIcons(columnIndex);
+    }
+  
+    
+    function updateSortIcons(columnIndex) {
+      const headers = document.querySelectorAll('#salesTable th i');
+      headers.forEach((icon, index) => {
+        icon.className = 'fas fa-sort';
+        if (index === columnIndex) {
+          icon.className = sortDirection === 1 ? 'fas fa-sort-up' : 'fas fa-sort-down';
+        }
+      });
+    }
+  
+    
+    function showNotification(message, type = "success") {
+      const notification = document.getElementById('notification');
+      const icon = notification.querySelector('i');
+      const messageSpan = document.getElementById('notificationMessage');
+      
+      messageSpan.textContent = message;
+      notification.style.backgroundColor = type === "error" ? '#dc3545' : '#28a745';
+      icon.className = type === "error" ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
+      
+      notification.classList.add('show');
+      setTimeout(() => notification.classList.remove('show'), 3000);
+    }
+  
+    
+    function initSortableHeaders() {
+      const headers = document.querySelectorAll('#salesTable th');
+      headers.forEach((header, index) => {
+        header.addEventListener('click', () => sortSales(index));
+      });
+    }
+  
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      initSortableHeaders();
+      loadSales();
+    });
   </script>
 </body>
 </html>

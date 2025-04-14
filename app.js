@@ -11,10 +11,7 @@ const SECRET_KEY = 'your_secret_key';
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-// -------------------- PRODUCTS API --------------------
 
-// GET /products
-app.get('/products', async (req, res) => {
 // Middleware to protect routes
 function authenticateToken(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
@@ -74,8 +71,6 @@ app.get('/products', authenticateToken, async (req, res) => {
   }
 });
 
-// POST /products
-app.post('/products', async (req, res) => {
 app.post('/products', authenticateToken, async (req, res) => {
   const { name, category, price, stock_quantity } = req.body;
   try {
@@ -89,8 +84,6 @@ app.post('/products', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT /products/:id
-app.put('/products/:id', async (req, res) => {
 app.put('/products/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { name, category, price, stock_quantity } = req.body;
@@ -105,8 +98,6 @@ app.put('/products/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// DELETE /products/:id
-app.delete('/products/:id', async (req, res) => {
 app.delete('/products/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
@@ -117,10 +108,7 @@ app.delete('/products/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// -------------------- CUSTOMERS API --------------------
 
-// GET /customers
-app.get('/customers', async (req, res) => {
 // -------------------- CUSTOMERS --------------------
 
 app.get('/customers', authenticateToken, async (req, res) => {
@@ -132,8 +120,6 @@ app.get('/customers', authenticateToken, async (req, res) => {
   }
 });
 
-// POST /customers 
-app.post('/customers', async (req, res) => {
 app.post('/customers', authenticateToken, async (req, res) => {
   const { name, email, phone } = req.body;
   try {
@@ -147,8 +133,6 @@ app.post('/customers', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT /customers/:id 
-app.put('/customers/:id', async (req, res) => {
 app.put('/customers/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { name, email, phone } = req.body;
@@ -163,8 +147,6 @@ app.put('/customers/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// DELETE /customers/:id
-app.delete('/customers/:id', async (req, res) => {
 app.delete('/customers/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
@@ -175,11 +157,8 @@ app.delete('/customers/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// -------------------- SALES API --------------------
 // -------------------- SALES --------------------
 
-// GET /sales
-app.get('/sales', async (req, res) => {
 app.get('/sales', authenticateToken, async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM sales');
@@ -189,56 +168,36 @@ app.get('/sales', authenticateToken, async (req, res) => {
   }
 });
 
-// POST /sales
-app.post('/sales', async (req, res) => {
 app.post('/sales', authenticateToken, async (req, res) => {
   const { product_id, customer_id, quantity, total_amount, purchase_date } = req.body;
   let connection;
   try {
-    
     const saleQuantity = parseInt(quantity, 10);
 
-    
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    
     const [productRows] = await connection.query(
       'SELECT stock_quantity FROM products WHERE id = ?',
       [product_id]
     );
-    if (productRows.length === 0) {
-      throw new Error("Product not found");
-    }
     if (productRows.length === 0) throw new Error("Product not found");
 
     const currentStock = productRows[0].stock_quantity;
-    if (currentStock < saleQuantity) {
-      throw new Error("Insufficient stock");
-    }
     if (currentStock < saleQuantity) throw new Error("Insufficient stock");
 
-    
     const [updateResult] = await connection.query(
       'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
       [saleQuantity, product_id]
     );
-    console.log(`Update result:`, updateResult);
-    if (updateResult.affectedRows === 0) {
-      throw new Error("Failed to update product stock");
-    }
     if (updateResult.affectedRows === 0) throw new Error("Failed to update stock");
 
-    
     const [result] = await connection.query(
       'INSERT INTO sales (product_id, customer_id, quantity, total_amount, purchase_date) VALUES (?, ?, ?, ?, ?)',
       [product_id, customer_id, saleQuantity, total_amount, purchase_date]
     );
 
-    
     await connection.commit();
-
-    console.log(`Sale added. Updated stock for product ${product_id} should be ${currentStock - saleQuantity}`);
     res.json({ id: result.insertId });
   } catch (err) {
     if (connection) await connection.rollback();
@@ -248,8 +207,6 @@ app.post('/sales', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT /sales/:id
-app.put('/sales/:id', async (req, res) => {
 app.put('/sales/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { product_id, customer_id, quantity, total_amount, purchase_date } = req.body;
@@ -264,8 +221,6 @@ app.put('/sales/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// DELETE /sales/:id
-app.delete('/sales/:id', async (req, res) => {
 app.delete('/sales/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {

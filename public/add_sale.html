@@ -1,92 +1,178 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Add Sale</title>
-  <link rel="stylesheet" href="styles/index.css">
+
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"> <!-- Font Awesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/add_sale.css">
 </head>
+
 <body>
-  <div class="dashboard-container">
+  <div class="container">
     <nav>
-      <ul>
-        <li><a href="sales.html">Sales Dashboard</a></li>
-        <li><a href="view_sale.html">View Sales</a></li>
-      </ul>
+      <a href="sales.html"><i class="fas fa-chart-line"></i> Sales Dashboard</a>
+      <a href="view_sale.html"><i class="fas fa-search"></i> View Sales</a>
     </nav>
-    <h1>Add Sale</h1>
-    <form id="salesForm">
-      <label for="productSelect">Product:</label>
-      <select id="productSelect" required>
-        <option value="">Select a product</option>
-      </select>
-      <br/><br/>
-      <label for="customerSelect">Customer:</label>
-      <select id="customerSelect" required>
-        <option value="">Select a customer</option>
-      </select>
-      <br/><br/>
-      <input type="number" id="quantity" placeholder="Quantity" required>
-      <input type="number" id="total_amount" placeholder="Total Amount" step="0.01" required>
-      <input type="datetime-local" id="purchase_date" required>
-      <br/><br/>
-      <button type="submit">Add Sale</button>
-    </form>
+
+    <h1><i class="fas fa-plus-circle"></i> Add Sale</h1>
+
+    <div class="card">
+      <form id="salesForm">
+        <label for="productSelect">Product:</label>
+        <select id="productSelect" required>
+          <option value="">Select a product</option>
+        </select>
+        <br/><br/>
+        <label for="customerSelect">Customer:</label>
+        <select id="customerSelect" required>
+          <option value="">Select a customer</option>
+        </select>
+        <br/><br/>
+        <input type="number" id="quantity" placeholder="Quantity" required>
+        <input type="number" id="total_amount" placeholder="Total Amount" step="0.01" required>
+        <input type="datetime-local" id="purchase_date" required>
+        <br/><br/>
+        <button type="submit">Add Sale</button>
+      </form>
+    </div>
+
+    <div class="notification" id="notification">
+      <i class="fas fa-check-circle"></i>
+      <span id="notificationMessage">Sale added successfully!</span>
+    </div>
   </div>
 
   <script>
-   
-    async function loadProducts() {
-      const response = await fetch('/products');
-      const products = await response.json();
-      const productSelect = document.getElementById('productSelect');
-      productSelect.innerHTML = `<option value="">Select a product</option>`;
-      products.forEach(product => {
-        const option = document.createElement('option');
-        option.value = product.id;
-        option.textContent = product.name;
-        productSelect.appendChild(option);
-      });
+    // Check for authentication token
+    if (!localStorage.getItem('token')) {
+      window.location.href = '/index.html'; 
     }
-
+  
+    
+    async function loadProducts() {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/products', {
+          headers: {
+            'Authorization': `Bearer ${token}`, 
+          }
+        });
+  
+        const products = await response.json();
+  
+        if (Array.isArray(products)) {
+          const productSelect = document.getElementById('productSelect');
+          productSelect.innerHTML = `<option value="">Select a product</option>`;
+          products.forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.id;
+            option.textContent = product.name;
+            productSelect.appendChild(option);
+          });
+        } else {
+          console.error('Expected an array of products, but got:', products);
+        }
+      } catch (error) {
+        console.error("Error loading products:", error);
+      }
+    }
+  
     
     async function loadCustomers() {
-      const response = await fetch('/customers');
-      const customers = await response.json();
-      const customerSelect = document.getElementById('customerSelect');
-      customerSelect.innerHTML = `<option value="">Select a customer</option>`;
-      customers.forEach(customer => {
-        const option = document.createElement('option');
-        option.value = customer.id;
-        option.textContent = customer.name;
-        customerSelect.appendChild(option);
-      });
+      try {
+        const token = localStorage.getItem('token'); 
+        const response = await fetch('/customers', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        });
+  
+        const customers = await response.json();
+  
+        if (Array.isArray(customers)) {
+          const customerSelect = document.getElementById('customerSelect');
+          customerSelect.innerHTML = `<option value="">Select a customer</option>`;
+          customers.forEach(customer => {
+            const option = document.createElement('option');
+            option.value = customer.id;
+            option.textContent = customer.name;
+            customerSelect.appendChild(option);
+          });
+        } else {
+          console.error('Expected an array of customers, but got:', customers);
+        }
+      } catch (error) {
+        console.error("Error loading customers:", error);
+      }
     }
-
+  
     
-    document.getElementById('salesForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const data = {
-        product_id: parseInt(document.getElementById('productSelect').value),
-        customer_id: parseInt(document.getElementById('customerSelect').value),
-        quantity: parseInt(document.getElementById('quantity').value),
-        total_amount: parseFloat(document.getElementById('total_amount').value),
-        purchase_date: document.getElementById('purchase_date').value
+    async function submitSale(event) {
+      event.preventDefault(); 
+  
+      
+      const productId = document.getElementById('productSelect').value;
+      const customerId = document.getElementById('customerSelect').value;
+      const quantity = document.getElementById('quantity').value;
+      const totalAmount = document.getElementById('total_amount').value;
+      const purchaseDate = document.getElementById('purchase_date').value;
+  
+      if (!productId || !customerId || !quantity || !totalAmount || !purchaseDate) {
+        alert('Please fill all fields');
+        return;
+      }
+  
+      const saleData = {
+        product_id: productId,
+        customer_id: customerId,
+        quantity: quantity,
+        total_amount: totalAmount,
+        purchase_date: purchaseDate,
       };
-
-      const response = await fetch('/sales', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-
-      const result = await response.json();
-      console.log('Sale added:', result);
-      alert('Sale added successfully!');
-      e.target.reset();
-    });
-
+  
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/sales', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(saleData),
+        });
+  
+        if (response.ok) {
+          
+          const notification = document.getElementById('notification');
+          notification.style.backgroundColor = 'var(--success)';
+          document.getElementById('notificationMessage').textContent = 'Sale added successfully!';
+          notification.classList.add('show');
+          setTimeout(() => notification.classList.remove('show'), 3000);
+  
+          
+          document.getElementById('salesForm').reset();
+        } else {
+          
+          const error = await response.json();
+          console.error(error.message);
+        }
+      } catch (error) {
+        console.error('Error adding sale:', error);
+      }
+    }
+  
+    
+    document.getElementById('salesForm').addEventListener('submit', submitSale);
+  
+    
     loadProducts();
     loadCustomers();
   </script>
+  
+
 </body>
+
 </html>

@@ -1,51 +1,132 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Add Product - Hamza Mobile Retail Store</title>
-  <style>
-    nav a {
-      text-decoration: none;
-      margin-right: 15px;
-      font-weight: bold;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Product</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/styles/add_product.css">
 </head>
 <body>
- 
-  <nav>
-    <a href="index.html">Dashboard</a>
-    <a href="view_product.html">View Products</a>
-  </nav>
-  <h1>Add Product</h1>
-  <form id="productForm">
-    <input type="text" id="name" placeholder="Product Name" required>
-    <input type="text" id="category" placeholder="Category" required>
-    <input type="number" id="price" placeholder="Price" step="0.01" required>
-    <input type="number" id="stock_quantity" placeholder="Stock Quantity" required>
-    <button type="submit">Submit Product</button>
-  </form>
+  <div class="container">
+    <nav>
+      <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="view_product.html"><i class="fas fa-box-open"></i> View Products</a>
+    </nav>
+
+    <h1><i class="fas fa-plus-circle"></i> Add Product</h1>
+
+    <div class="card">
+      <form id="productForm">
+        <div class="form-group">
+          <label for="name">Product Name</label>
+          <input type="text" id="name" placeholder="Enter product name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="category">Category</label>
+          <input type="text" id="category" placeholder="Enter product category" required>
+        </div>
+
+        <div class="form-group">
+          <label for="price">Price Per Piece</label>
+          <input type="number" id="price" placeholder="0.00" step="0.01" min="0" required>
+        </div>
+
+        <div class="form-group">
+          <label for="stock_quantity">Stock Quantity</label>
+          <input type="number" id="stock_quantity" placeholder="Enter quantity" min="0" required>
+        </div>
+
+        <button type="submit"><i class="fas fa-save"></i> Submit Product</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="notification" id="notification">
+    <i class="fas fa-check-circle"></i>
+    <span id="notificationMessage">Product added successfully!</span>
+  </div>
 
   <script>
+    
+    if (!localStorage.getItem('token')) {
+      window.location.href = '/index.html'; // Redirect to login page
+    }
+
     document.getElementById('productForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const data = {
-        name: document.getElementById('name').value,
-        category: document.getElementById('category').value,
-        price: parseFloat(document.getElementById('price').value),
-        stock_quantity: parseInt(document.getElementById('stock_quantity').value)
-      };
+      
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalBtnText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+      submitBtn.disabled = true;
 
-      const response = await fetch('/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
+      try {
+        const data = {
+          name: document.getElementById('name').value,
+          category: document.getElementById('category').value,
+          price: parseFloat(document.getElementById('price').value),
+          stock_quantity: parseInt(document.getElementById('stock_quantity').value)
+        };
 
-      const result = await response.json();
-      console.log('Product added:', result);
-      alert('Product added successfully!');
-      e.target.reset();
+        
+        const token = localStorage.getItem('token');
+
+        
+        if (!token) {
+          window.location.href = '/index.html'; 
+          return;
+        }
+
+        
+        const response = await fetch('/products', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // Added the token to Authorization header
+          },
+          body: JSON.stringify(data)
+        });
+
+        if (!response.ok) throw new Error('Failed to add product');
+
+        const result = await response.json();
+        console.log('Product added:', result);
+        
+        
+        const notification = document.getElementById('notification');
+        notification.style.backgroundColor = 'var(--success)';
+        document.getElementById('notificationMessage').textContent = 'Product added successfully!';
+        notification.classList.add('show');
+        
+        
+        setTimeout(() => {
+          notification.classList.remove('show');
+        }, 3000);
+        
+        
+        e.target.reset();
+      } catch (error) {
+        console.error('Error adding product:', error);
+        
+        
+        const notification = document.getElementById('notification');
+        notification.style.backgroundColor = 'var(--danger)';
+        document.getElementById('notificationMessage').textContent = 'Error adding product!';
+        notification.classList.add('show');
+        
+        
+        setTimeout(() => {
+          notification.classList.remove('show');
+        }, 3000);
+      } finally {
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
+      }
     });
   </script>
 </body>

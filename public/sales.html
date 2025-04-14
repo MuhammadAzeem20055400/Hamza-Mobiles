@@ -1,103 +1,277 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sales Dashboard</title>
-  <link rel="stylesheet" href="styles/index.css">
+
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"> <!-- Font Awesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/sales.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
 </head>
 
 <body>
-  <div class="dashboard-container">
-    <h1>Sales Management Dashboard</h1>
+  <div class="container">
     <nav>
-      <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="sales.html">Dashboard</a></li>
-        <li><a href="add_sale.html">Add Sale</a></li>
-        <li><a href="view_sale.html">View Sales</a></li>
-      </ul>
+      <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="sales.html"><i class="fas fa-chart-line"></i> Sales Dashboard</a>
+      <a href="add_sale.html"><i class="fas fa-plus-circle"></i> Add Sale</a>
+      <a href="view_sale.html"><i class="fas fa-search"></i> View Sales</a>
     </nav>
 
+    <h1><i class="fas fa-cogs"></i> Sales Management Dashboard</h1>
 
     <section id="recentSales">
-      <h2>Recent Sales (Last 10)</h2>
-      <table id="recentSalesTable">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Product</th>
-            <th>Customer</th>
-            <th>Quantity</th>
-            <th>Total Amount</th>
-            <th>Purchase Date</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <h2>Recent Sales</h2>
+      <div class="filter-section">
+        <div class="filter-group">
+          <label for="startDate" class="filter-label">Start Date:</label>
+          <input type="date" id="startDate" class="filter-input">
+        </div>
+        <div class="filter-group">
+          <label for="endDate" class="filter-label">End Date:</label>
+          <input type="date" id="endDate" class="filter-input">
+        </div>
+        <button class="filter-button" onclick="filterByDate()">
+          <i class="fas fa-filter"></i> Apply Filter
+        </button>
+        <button class="filter-button reset-button" onclick="resetFilters()">
+          <i class="fas fa-undo"></i> Reset
+        </button>
+      </div>
+     
+      <div class="card">
+        <table id="recentSalesTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Product</th>
+              <th>Customer</th>
+              <th>Quantity</th>
+              <th>Total Amount</th>
+              <th>Purchase Date</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div>
+        <button onclick="exportToPDF()">Export to PDF</button>
+        <button onclick="exportToExcel()">Export to Excel</button>        
+      </div>
     </section>
   </div>
 
   <script>
-
+    
+    if (!localStorage.getItem('token')) {
+      window.location.href = '/index.html'; 
+    }
+    
+   
     let productCache = {};
     let customerCache = {};
-
+  
+    async function fetchWithAuth(url) {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/index.html';
+        throw new Error('No authentication token');
+      }
+  
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
+      return response.json();
+    }
+  
     async function fetchProducts() {
       try {
-        const response = await fetch('/products');
-        const products = await response.json();
+        const products = await fetchWithAuth('/products');
         products.forEach(product => {
           productCache[product.id] = product.name;
         });
+        return true;
       } catch (error) {
         console.error("Error loading products:", error);
+        showError("Failed to load products");
+        return false;
       }
     }
-
+  
     async function fetchCustomers() {
       try {
-        const response = await fetch('/customers');
-        const customers = await response.json();
+        const customers = await fetchWithAuth('/customers');
         customers.forEach(customer => {
           customerCache[customer.id] = customer.name;
         });
+        return true;
       } catch (error) {
         console.error("Error loading customers:", error);
+        showError("Failed to load customers");
+        return false;
       }
     }
+ 
+    function showError(message) {
+      const tbody = document.querySelector('#recentSalesTable tbody');
+      tbody.innerHTML = `<tr><td colspan="6" class="error-message">${message}</td></tr>`;
+    }
+  
+    let salesData = []; 
 
-    async function loadRecentSales() {
-      try {
-        const response = await fetch('/sales');
-        const sales = await response.json();
+async function loadRecentSales() {
+  try {
+    // Wait for both products and customers to load first
+    const [productsLoaded, customersLoaded] = await Promise.all([
+      fetchProducts(),
+      fetchCustomers()
+    ]);
 
-        sales.sort((a, b) => b.id - a.id);
-        const recent = sales.slice(0, 10);
-        const tbody = document.querySelector('#recentSalesTable tbody');
-        tbody.innerHTML = '';
-        recent.forEach(sale => {
-          const tr = document.createElement('tr');
-
-          const formattedDate = new Date(sale.purchase_date).toLocaleDateString();
-          tr.innerHTML = `
-            <td>${sale.id}</td>
-            <td>${productCache[sale.product_id] || 'Unknown Product'}</td>
-            <td>${customerCache[sale.customer_id] || 'Unknown Customer'}</td>
-            <td>${sale.quantity}</td>
-            <td>${sale.total_amount}</td>
-            <td>${formattedDate}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      } catch (error) {
-        console.error("Error loading recent sales:", error);
-      }
+    if (!productsLoaded || !customersLoaded) {
+      return;
     }
 
-    fetchProducts();
-    fetchCustomers();
-    loadRecentSales();
+    
+    salesData = await fetchWithAuth('/sales');
+    salesData.sort((a, b) => b.id - a.id);
+    const recent = salesData.slice(0, 10);
+    const tbody = document.querySelector('#recentSalesTable tbody');
+    tbody.innerHTML = '';
+
+    recent.forEach(sale => {
+      const tr = document.createElement('tr');
+      const formattedDate = new Date(sale.purchase_date).toLocaleDateString();
+      tr.innerHTML = `
+        <td>${sale.id}</td>
+        <td>${productCache[sale.product_id] || 'Unknown Product'}</td>
+        <td>${customerCache[sale.customer_id] || 'Unknown Customer'}</td>
+        <td>${sale.quantity}</td>
+        <td>$${parseFloat(sale.total_amount).toFixed(2)}</td>
+        <td>${formattedDate}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (error) {
+    console.error("Error loading recent sales:", error);
+    showError("Failed to load sales data");
+  }
+}
+
+// Export to PDF function
+function exportToPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  doc.text("Sales Report", 20, 10);
+
+  const headers = [['ID', 'Product', 'Customer', 'Quantity', 'Total Amount', 'Purchase Date']];
+  const rows = salesData.map(sale => [
+    sale.id,
+    productCache[sale.product_id] || 'Unknown Product',
+    customerCache[sale.customer_id] || 'Unknown Customer',
+    sale.quantity,
+    `$${parseFloat(sale.total_amount).toFixed(2)}`,
+    new Date(sale.purchase_date).toLocaleDateString()
+  ]);
+
+  
+  doc.autoTable({
+    head: headers,
+    body: rows,
+    startY: 20
+  });
+
+  doc.save('sales_report.pdf');
+}
+
+// Export to Excel function
+function exportToExcel() {
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['ID', 'Product', 'Customer', 'Quantity', 'Total Amount', 'Purchase Date'],
+    ...salesData.map(sale => [
+      sale.id,
+      productCache[sale.product_id] || 'Unknown Product',
+      customerCache[sale.customer_id] || 'Unknown Customer',
+      sale.quantity,
+      `$${parseFloat(sale.total_amount).toFixed(2)}`,
+      new Date(sale.purchase_date).toLocaleDateString()
+    ])
+  ]);
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Sales Report');
+  XLSX.writeFile(wb, 'sales_report.xlsx');
+}
+
+
+// Filter by Date function
+function filterByDate() {
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+
+  if (!startDate || !endDate) {
+    alert("Please select both start and end dates.");
+    return;
+  }
+
+  
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  
+  end.setHours(23, 59, 59, 999);
+
+  const filteredSales = salesData.filter(sale => {
+    const saleDate = new Date(sale.purchase_date);
+    return saleDate >= start && saleDate <= end;
+  });
+
+  if (filteredSales.length === 0) {
+    alert("No sales found for the selected date range.");
+    return;
+  }
+
+  displaySales(filteredSales);
+}
+
+function resetFilters() {
+  document.getElementById('startDate').value = '';
+  document.getElementById('endDate').value = '';
+  displaySales(salesData.slice(0, 10)); 
+}
+
+function displaySales(filteredSales) {
+  const tbody = document.querySelector('#recentSalesTable tbody');
+  tbody.innerHTML = '';
+
+  filteredSales.forEach(sale => {
+    const tr = document.createElement('tr');
+    const formattedDate = new Date(sale.purchase_date).toLocaleDateString();
+    tr.innerHTML = `
+      <td>${sale.id}</td>
+      <td>${productCache[sale.product_id] || 'Unknown Product'}</td>
+      <td>${customerCache[sale.customer_id] || 'Unknown Customer'}</td>
+      <td>${sale.quantity}</td>
+      <td>$${parseFloat(sale.total_amount).toFixed(2)}</td>
+      <td>${formattedDate}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+ 
+ loadRecentSales();
   </script>
 </body>
 
