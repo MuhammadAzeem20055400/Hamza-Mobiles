@@ -1,87 +1,163 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>View Customers - Hamza Mobile Retail Store</title>
-    <style>
-        nav a {
-            text-decoration: none;
-            margin-right: 15px;
-            font-weight: bold;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        table,
-        th,
-        td {
-            border: 1px solid #aaa;
-        }
-
-        th,
-        td {
-            padding: 8px;
-            text-align: left;
-        }
-
-        button {
-            margin: 3px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>View Customers</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"> <!-- Font Awesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/view_customers.css" />
 </head>
-
 <body>
-    
+  <div class="container">
     <nav>
-        <a href="index.html">Dashboard</a>
-        <a href="add_customer.html">Add Customer</a>
+      <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="add_customer.html"><i class="fas fa-user-plus"></i> Add Customer</a>
     </nav>
-    <h1>View Customers</h1>
+
+    <h1><i class="fas fa-users"></i> View Customers</h1>
+
+    
+    <input type="text" id="searchCustomer" placeholder="Search customers..." oninput="searchCustomers()">
+    
     <button onclick="loadCustomers()">Refresh Customers</button>
-    <table id="customerTable">
+
+    <div class="card">
+      <table id="customerTable">
         <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Actions</th>
-            </tr>
+          <tr>
+            <th onclick="sortCustomerTable(0)">ID <i class="fas fa-sort"></i></th>
+            <th onclick="sortCustomerTable(1)">Name <i class="fas fa-sort"></i></th>
+            <th onclick="sortCustomerTable(2)">Email <i class="fas fa-sort"></i></th>
+            <th onclick="sortCustomerTable(3)">Phone <i class="fas fa-sort"></i></th>
+            <th>Actions</th>
+          </tr>
         </thead>
         <tbody></tbody>
-    </table>
+      </table>
+    </div>
 
-    <script>
-        async function loadCustomers() {
-            const response = await fetch('/customers');
-            const customers = await response.json();
-            const tbody = document.getElementById('customerTable').querySelector('tbody');
-            tbody.innerHTML = '';
-            customers.forEach(customer => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
+    <div class="notification" id="notification">
+      <i class="fas fa-check-circle"></i>
+      <span id="notificationMessage">Customer list updated!</span>
+    </div>
+  </div>
+
+  <script>
+    
+    if (!localStorage.getItem('token')) {
+      window.location.href = '/index.html'; 
+    }
+
+    let customers = [];
+    let sortDirection = [null, null, null, null];
+
+    async function loadCustomers() {
+      try {
+        
+        const token = localStorage.getItem('token');
+
+        
+        if (!token) {
+          window.location.href = '/index.html'; 
+          return;
+        }
+
+        
+        const response = await fetch('/customers', {
+          headers: {
+            'Authorization': `Bearer ${token}` // Added the token in the Authorization header
+          }
+        });
+
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Error loading customers:", errorData);
+          return;
+        }
+
+        
+        customers = await response.json();
+        displayCustomers(customers); 
+      } catch (error) {
+        console.error("Error loading customers:", error);
+      }
+    }
+
+    function displayCustomers(customersToDisplay) {
+      const tbody = document.getElementById('customerTable').querySelector('tbody');
+      tbody.innerHTML = '';
+      customersToDisplay.forEach(customer => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
           <td>${customer.id}</td>
           <td>${customer.name}</td>
           <td>${customer.email}</td>
           <td>${customer.phone}</td>
-         <td>
-  <button onclick="window.location.href='edit_customer.html?id=${customer.id}'">Edit</button>
-</td>
-
+          <td>
+            <button onclick="window.location.href='edit_customer.html?id=${customer.id}'">Edit</button>
+          </td>
         `;
-                tbody.appendChild(tr);
-            });
+        tbody.appendChild(tr);
+      });
+
+      
+      const notification = document.getElementById('notification');
+      notification.style.backgroundColor = 'var(--success)';
+      document.getElementById('notificationMessage').textContent = 'Customer list updated!';
+      notification.classList.add('show');
+      setTimeout(() => notification.classList.remove('show'), 3000);
+    }
+
+    function searchCustomers() {
+      const searchQuery = document.getElementById('searchCustomer').value.toLowerCase();
+      const filteredCustomers = customers.filter(customer =>
+        customer.name.toLowerCase().includes(searchQuery) ||
+        customer.email.toLowerCase().includes(searchQuery)
+      );
+      displayCustomers(filteredCustomers);
+    }
+
+    function sortCustomerTable(columnIndex) {
+      sortDirection = sortDirection.map((dir, index) => index === columnIndex ? dir : null);
+      sortDirection[columnIndex] = sortDirection[columnIndex] === false ? true : false;
+
+      const sortedCustomers = [...customers].sort((a, b) => {
+        let valA, valB;
+        switch (columnIndex) {
+          case 0: valA = a.id; valB = b.id; break;
+          case 1: valA = a.name; valB = b.name; break;
+          case 2: valA = a.email; valB = b.email; break;
+          case 3: valA = a.phone; valB = b.phone; break;
+          default: valA = a.id; valB = b.id;
         }
 
+        if (typeof valA === "string") {
+          return sortDirection[columnIndex] ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        } else {
+          return sortDirection[columnIndex] ? valA - valB : valB - valA;
+        }
+      });
 
-        
-        loadCustomers();
-    </script>
+      updateSortingIcons(columnIndex);
+      displayCustomers(sortedCustomers);
+    }
+
+    function updateSortingIcons(columnIndex) {
+      const headers = document.querySelectorAll('th i');
+      headers.forEach((icon, index) => {
+        if (index === columnIndex) {
+          icon.classList.remove('fa-sort', 'fa-sort-up', 'fa-sort-down');
+          icon.classList.add(sortDirection[columnIndex] ? 'fa-sort-up' : 'fa-sort-down');
+        } else {
+          icon.classList.remove('fa-sort-up', 'fa-sort-down');
+          icon.classList.add('fa-sort');
+        }
+      });
+    }
+
+    loadCustomers();
+  </script>
 </body>
-
 </html>
